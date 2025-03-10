@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Extrator de Resultados Laboratoriais</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 200px; margin-bottom: 10px; }
+        #output { white-space: pre-wrap; font-family: monospace; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Extrator de Resultados Laboratoriais</h1>
+    <p>Cole o texto dos exames abaixo e clique em "Processar":</p>
+    <textarea id="input" placeholder="Cole o texto aqui..."></textarea>
+    <button onclick="processarTexto()">Processar</button>
+    <h2>Resultado:</h2>
+    <div id="output"></div>
+
+    <script>
+        function processarTexto() {
+            const texto = document.getElementById('input').value;
+            if (!texto) {
+                document.getElementById('output').textContent = "Erro: Nenhum texto inserido!";
+                return;
+            }
+            const resultado = extrairValores(texto);
+            document.getElementById('output').textContent = resultado;
+        }
+
+        function extrairValores(texto) {
+            const regexMap = {
+                'Hb': /(\d+\.?\d*)\s*g\/dL\s*Hemoglobina/,
+                'Ht': /(\d+\.?\d*)\s*%\s*Hematócrito/,
+                'Leuco': /(\d+)\s*\/mm³\s*Leucócitos/,
+                'N': /(\d+)\s*\/mm³\s*Neutrófilos/,
+                'Ly': /(\d+)\s*\/mm³\s*Linfócitos/,
+                'Plq': /(\d+)\s*\/mm³\s*CONTAGEM DE PLAQUETAS/,
+                'HbGli': /HEMOGLOBINA GLICADA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*%/,
+                'U': /UREIA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Cr': /CREATININA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Na': /SÓDIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mEq\/L/,
+                'K': /POTÁSSIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mEq\/L/,
+                'Cat': /CÁLCIO TOTAL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Mg': /MAGNÉSIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Prot': /Proteínas\s*:\s*(\d+\.?\d*)\s*g\/dL/,
+                'Alb': /Albumina\s*:\s*(\d+\.?\d*)\s*g\/dL/,
+                'AcF': /ÁCIDO FÓLICO[\s\S]*?Resultado:\s*(?:>)?(\d+\.?\d*)\s*ng\/mL/,
+                'B12': /VITAMINA B12[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*pg\/mL/,
+                'VitD': /VITAMINA D[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*ng\/mL/,
+                'Fe': /FERRO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*µg\/dL/,
+                'Ferr': /FERRITINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*ng\/mL/,
+                'IsTfe': /ÍNDICE DE SATURAÇÃO DA TRANSFERRINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*%/,
+                'Tf': /TRANSFERRINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Ct': /COLESTEROL TOTAL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'LDL': /COLESTEROL LDL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'HDL': /COLESTEROL HDL[\s\S]*?Colesterol HDL\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'TG': /TRIGLICÉRIDES[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Bt': /Bilirrubina Total\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Bi': /Bilirrubina Indireta\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'Bd': /Bilirrubina Direta\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
+                'FA': /FOSFATASE ALCALINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
+                'TGo': /ASPARTATO AMINOTRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
+                'TGP': /ALANINA AMINOTRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
+                'GGT': /GAMA GLUTAMIL TRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
+                'TSH': /HORMÔNIO TIREOESTIMULANTE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*µUI\/mL/
+            };
+
+            const valores = {};
+            console.log("Iniciando extração de valores...");
+            for (let chave in regexMap) {
+                const match = texto.match(regexMap[chave]);
+                valores[chave] = match ? match[1] : '-';
+                console.log(`${chave}: ${valores[chave]}`); // Log para depuração
+            }
+
+            const grupos = [
+                ['Hb', 'Ht'],
+                ['Leuco', 'N', 'Ly', 'Plq'],
+                ['HbGli'],
+                ['U', 'Cr', 'Na', 'K', 'Cat', 'Mg'],
+                ['Prot', 'Alb'],
+                ['AcF', 'B12', 'VitD', 'Fe', 'Ferr', 'IsTfe', 'Tf'],
+                ['Ct', 'LDL', 'HDL', 'TG'],
+                ['Bt', 'Bi', 'Bd'],
+                ['FA', 'TGo', 'TGP', 'GGT'],
+                ['TSH']
+            ];
+
+            let saida = '';
+            console.log("Montando saída...");
+            grupos.forEach((grupo, index) => {
+                grupo.forEach((item, idx) => {
+                    let valor = valores[item];
+                    if (item === 'Plq') valor = valor.replace(/000$/, ' 000');
+                    if (item === 'HbGli' || item === 'IsTfe') valor += '%';
+                    if (item === 'Bt') saida += `${item} ${valor} (`;
+                    else if (item === 'Bi') saida += `${item} ${valor} `;
+                    else if (item === 'Bd') saida += `${item} ${valor})`;
+                    else saida += `${item} ${valor}`;
+                    if (idx < grupo.length - 1) saida += ' ';
+                });
+                if (index < grupos.length - 1) saida += ' I ';
+            });
+
+            console.log("Saída final:", saida);
+            return saida;
+        }
+    </script>
+</body>
+</html>
