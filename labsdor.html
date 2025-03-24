@@ -2,109 +2,180 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extrator de Resultados Laboratoriais</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        textarea { width: 100%; height: 200px; margin-bottom: 10px; }
-        #output { white-space: pre-wrap; font-family: monospace; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            border: 1px solid #000;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #e0e0e0;
+        }
+        #resultado {
+            margin-top: 20px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>Extrator de Resultados Laboratoriais</h1>
-    <p>Cole o texto dos exames abaixo e clique em "Processar":</p>
-    <textarea id="input" placeholder="Cole o texto aqui..."></textarea>
-    <button onclick="processarTexto()">Processar</button>
-    <h2>Resultado:</h2>
-    <div id="output"></div>
+    <p>Cole o texto dos exames abaixo e clique em 'Processar':</p>
+    <textarea id="inputText"></textarea>
+    <button onclick="processar()">Processar</button>
+    <div id="resultado">Resultado:</div>
 
     <script>
-        function processarTexto() {
-            const texto = document.getElementById('input').value;
-            if (!texto) {
-                document.getElementById('output').textContent = "Erro: Nenhum texto inserido!";
-                return;
+        // Mapeamento de nomes de exames para siglas
+        const mapping = {
+            'hemoglobina': 'Hb',
+            'hematocrito': 'Ht',
+            'leucocitos': 'L',
+            'neutrofilos': 'N',
+            'linfocitos': 'Ly',
+            'plaquetas': 'Plq',
+            'proteínacreativa': 'PCR',
+            'hemoglobinaglicada': 'HbGli',
+            'ureia': 'U',
+            'creatinina': 'Cr',
+            'sodio': 'Na',
+            'potassio': 'K',
+            'calciototal': 'Cat',
+            'magnesio': 'Mg',
+            'proteinatotal': 'Prot',
+            'albumina': 'Alb',
+            'acidofolico': 'AcF',
+            'vitaminab12': 'B12',
+            'vitaminad': 'VitD',
+            'ferro': 'Fe',
+            'ferritina': 'Ferr',
+            'indicesaturacaotransferrina': 'IST',
+            'transferrina': 'Tf',
+            'bilirrubinatotal': 'Bt',
+            'bilirrubinaindireta': 'Bi',
+            'bilirrubinadireta': 'Bd',
+            'fosfatasealcalina': 'FA',
+            'aspartatoaminotransferase': 'TGO',
+            'alaninaaminotransferase': 'TGP',
+            'gamaglutamiltransferase': 'GGT',
+            'amilase': 'Amilase',
+            'lipase': 'Lipase',
+            'ph': 'pH',
+            'hco3': 'BIC',
+            'acidolactico': 'Lac'
+        };
+
+        // Formato da saída
+        const formato = [
+            { sigla: 'Hb', separador: ' - ' },
+            { sigla: 'Ht', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'L', separador: ' - ' },
+            { sigla: 'N', separador: ' - ' },
+            { sigla: 'Ly', separador: ' - ' },
+            { sigla: 'Plq', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'PCR', separador: ' - ' },
+            { sigla: 'HbGli', separador: ' -% ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'U', separador: ' - ' },
+            { sigla: 'Cr', separador: ' - ' },
+            { sigla: 'Na', separador: ' - ' },
+            { sigla: 'K', separador: ' - ' },
+            { sigla: 'Cat', separador: ' - ' },
+            { sigla: 'Mg', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'Prot', separador: ' - ' },
+            { sigla: 'Alb', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'AcF', separador: ' - ' },
+            { sigla: 'B12', separador: ' - ' },
+            { sigla: 'VitD', separador: ' - ' },
+            { sigla: 'Fe', separador: ' - ' },
+            { sigla: 'Ferr', separador: ' - ' },
+            { sigla: 'IST', separador: ' -% ' },
+            { sigla: 'Tf', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'Bt', separador: ' - ' },
+            { tipo: 'grupo', siglas: ['Bi', 'Bd'], separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { sigla: 'FA', separador: ' - ' },
+            { sigla: 'TGO', separador: ' - ' },
+            { sigla: 'TGP', separador: ' - ' },
+            { sigla: 'GGT', separador: ' - ' },
+            { sigla: 'Amilase', separador: ' - ' },
+            { sigla: 'Lipase', separador: ' - ' },
+            { tipo: 'separador', valor: 'I ' },
+            { tipo: 'grupo', siglas: ['pH', 'BIC', 'Lac'], prefixo: 'GasoV: ', separador: ' - ' }
+        ];
+
+        // Função para extrair valores do texto
+        function extrairValores(texto) {
+            const valores = {};
+            const linhas = texto.split('\n');
+            for (const linha of linhas) {
+                for (const [nome, sigla] of Object.entries(mapping)) {
+                    const regex = new RegExp(`${nome}\\s*:\\s*(\\d+\\.?\\d*)`, 'i');
+                    const match = linha.match(regex);
+                    if (match) {
+                        valores[sigla] = match[1];
+                        break;
+                    }
+                }
             }
-            const resultado = extrairValores(texto);
-            document.getElementById('output').textContent = resultado;
+            return valores;
         }
 
-        function extrairValores(texto) {
-            const regexMap = {
-                'Hb': /(\d+\.?\d*)\s*g\/dL\s*Hemoglobina/,
-                'Ht': /(\d+\.?\d*)\s*%\s*Hematócrito/,
-                'Leuco': /(\d+)\s*\/mm³\s*Leucócitos/,
-                'N': /(\d+)\s*\/mm³\s*Neutrófilos/,
-                'Ly': /(\d+)\s*\/mm³\s*Linfócitos/,
-                'Plq': /(\d+)\s*\/mm³\s*CONTAGEM DE PLAQUETAS/,
-                'HbGli': /HEMOGLOBINA GLICADA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*%/,
-                'U': /UREIA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Cr': /CREATININA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Na': /SÓDIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mEq\/L/,
-                'K': /POTÁSSIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mEq\/L/,
-                'Cat': /CÁLCIO TOTAL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Mg': /MAGNÉSIO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Prot': /Proteínas\s*:\s*(\d+\.?\d*)\s*g\/dL/,
-                'Alb': /Albumina\s*:\s*(\d+\.?\d*)\s*g\/dL/,
-                'AcF': /ÁCIDO FÓLICO[\s\S]*?Resultado:\s*(?:>)?(\d+\.?\d*)\s*ng\/mL/,
-                'B12': /VITAMINA B12[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*pg\/mL/,
-                'VitD': /VITAMINA D[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*ng\/mL/,
-                'Fe': /FERRO[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*µg\/dL/,
-                'Ferr': /FERRITINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*ng\/mL/,
-                'IsTfe': /ÍNDICE DE SATURAÇÃO DA TRANSFERRINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*%/,
-                'Tf': /TRANSFERRINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Ct': /COLESTEROL TOTAL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'LDL': /COLESTEROL LDL[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'HDL': /COLESTEROL HDL[\s\S]*?Colesterol HDL\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'TG': /TRIGLICÉRIDES[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Bt': /Bilirrubina Total\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Bi': /Bilirrubina Indireta\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'Bd': /Bilirrubina Direta\s*:\s*(\d+\.?\d*)\s*mg\/dL/,
-                'FA': /FOSFATASE ALCALINA[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
-                'TGo': /ASPARTATO AMINOTRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
-                'TGP': /ALANINA AMINOTRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
-                'GGT': /GAMA GLUTAMIL TRANSFERASE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*U\/L/,
-                'TSH': /HORMÔNIO TIREOESTIMULANTE[\s\S]*?Resultado:\s*(\d+\.?\d*)\s*µUI\/mL/
-            };
-
-            const valores = {};
-            console.log("Iniciando extração de valores...");
-            for (let chave in regexMap) {
-                const match = texto.match(regexMap[chave]);
-                valores[chave] = match ? match[1] : '-';
-                console.log(`${chave}: ${valores[chave]}`); // Log para depuração
+        // Função para construir a saída
+        function construirSaida(valores) {
+            let saida = [];
+            for (let i = 0; i < formato.length; i++) {
+                const item = formato[i];
+                if (item.sigla && valores[item.sigla]) {
+                    saida.push(`${item.sigla} ${valores[item.sigla]}`);
+                    if (i < formato.length - 1 && (formato[i + 1].sigla in valores || formato[i + 1].tipo === 'grupo')) {
+                        saida.push(item.separador || ' - ');
+                    }
+                } else if (item.tipo === 'separador') {
+                    if (i < formato.length - 1 && formato[i + 1].sigla in valores) {
+                        saida.push(item.valor);
+                    }
+                } else if (item.tipo === 'grupo') {
+                    const siglasGrupo = item.siglas.filter(s => valores[s]);
+                    if (siglasGrupo.length > 0) {
+                        if (item.prefixo === 'GasoV: ') {
+                            const grupoStr = siglasGrupo.map(s => `${s} ${valores[s]}`).join(' - ');
+                            saida.push(`${item.prefixo}${grupoStr} -`);
+                        } else {
+                            const grupoStr = siglasGrupo.map(s => `${s} ${valores[s]}`).join(' - ');
+                            saida.push(`(${grupoStr} -)`);
+                        }
+                    }
+                }
             }
+            return saida.join('').trim();
+        }
 
-            const grupos = [
-                ['Hb', 'Ht'],
-                ['Leuco', 'N', 'Ly', 'Plq'],
-                ['HbGli'],
-                ['U', 'Cr', 'Na', 'K', 'Cat', 'Mg'],
-                ['Prot', 'Alb'],
-                ['AcF', 'B12', 'VitD', 'Fe', 'Ferr', 'IsTfe', 'Tf'],
-                ['Ct', 'LDL', 'HDL', 'TG'],
-                ['Bt', 'Bi', 'Bd'],
-                ['FA', 'TGo', 'TGP', 'GGT'],
-                ['TSH']
-            ];
-
-            let saida = '';
-            console.log("Montando saída...");
-            grupos.forEach((grupo, index) => {
-                grupo.forEach((item, idx) => {
-                    let valor = valores[item];
-                    if (item === 'Plq') valor = valor.replace(/000$/, ' 000');
-                    if (item === 'HbGli' || item === 'IsTfe') valor += '%';
-                    if (item === 'Bt') saida += `${item} ${valor} (`;
-                    else if (item === 'Bi') saida += `${item} ${valor} `;
-                    else if (item === 'Bd') saida += `${item} ${valor})`;
-                    else saida += `${item} ${valor}`;
-                    if (idx < grupo.length - 1) saida += ' ';
-                });
-                if (index < grupos.length - 1) saida += ' I ';
-            });
-
-            console.log("Saída final:", saida);
-            return saida;
+        // Função principal de processamento
+        function processar() {
+            const inputText = document.getElementById('inputText').value;
+            const valores = extrairValores(inputText);
+            const saida = construirSaida(valores);
+            document.getElementById('resultado').innerText = `Resultado: ${saida}`;
         }
     </script>
 </body>
