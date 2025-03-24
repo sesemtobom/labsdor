@@ -1,99 +1,99 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrator de Resultados de Exames</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-        }
-        textarea {
-            width: 100%;
-            height: 300px;
-            margin-bottom: 20px;
-            padding: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-        #resultado {
-            font-weight: bold;
-            font-size: 1.1em;
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Extrator Generalista de Exames</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    textarea { width: 100%; height: 300px; margin-bottom: 20px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #output { white-space: pre-wrap; margin-top: 20px; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; }
+  </style>
 </head>
 <body>
-    <h1>Extrator de Resultados de Exames</h1>
-    <p>Cole o texto do laudo completo abaixo:</p>
-    <textarea id="laudoInput" placeholder="Cole o texto do laudo aqui..."></textarea>
-    <button onclick="extrairDados()">Extrair Dados</button>
-    <div id="resultado"></div>
+  <h2>Extrator de Exames Laboratoriais (Generalista)</h2>
+  <textarea id="input" placeholder="Cole aqui o conteúdo bruto do laudo..."></textarea>
+  <button onclick="extrair()">Extrair</button>
+  <div id="output"></div>
 
-    <script>
-        function extrairDados() {
-            const texto = document.getElementById('laudoInput').value;
-            
-            // Função para encontrar valores no texto
-            function encontrarValor(padrao, textoCompleto) {
-                const regex = new RegExp(padrao, 'i');
-                const match = textoCompleto.match(regex);
-                return match ? match[1].trim() : "";
+  <script>
+    function extrair() {
+      const texto = document.getElementById("input").value;
+      const parametros = [
+        { sigla: "Hb", termos: ["Hemoglobina"] },
+        { sigla: "Ht", termos: ["Hematócrito", "Hematocrito"] },
+        { sigla: "L", termos: ["Leucócitos"] },
+        { sigla: "N", termos: ["Neutrófilos"] },
+        { sigla: "Ly", termos: ["Linfócitos"] },
+        { sigla: "Plq", termos: ["Plaquetas"] },
+        { sigla: "PCR", termos: ["Proteína C Reativa"] },
+        { sigla: "HbGli", termos: ["Hemoglobina Glicada", "HbA1c"] },
+        { sigla: "U", termos: ["Ureia"] },
+        { sigla: "Cr", termos: ["Creatinina"] },
+        { sigla: "Na", termos: ["Sódio", "Sodio"] },
+        { sigla: "K", termos: ["Potássio", "Potassio"] },
+        { sigla: "Cat", termos: ["Cálcio Iônico"] },
+        { sigla: "Mg", termos: ["Magnésio"] },
+        { sigla: "Bt", termos: ["Bilirrubina Total"] },
+        { sigla: "Bi", termos: ["Bilirrubina Indireta"] },
+        { sigla: "Bd", termos: ["Bilirrubina Direta"] },
+        { sigla: "TGo", termos: ["AST", "TGO"] },
+        { sigla: "TGP", termos: ["ALT", "TGP"] },
+        { sigla: "Gaso_pH", termos: ["pH"] },
+        { sigla: "Gaso_BIC", termos: ["HCO3", "Bicarbonato"] },
+        { sigla: "Gaso_Lac", termos: ["Ácido Lático", "Lactato"] }
+      ];
+
+      const resultados = [];
+
+      for (const { sigla, termos } of parametros) {
+        let encontrado = false;
+        for (const termo of termos) {
+          const regex = new RegExp(`${termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,40}?[:\\s]?(Inferior a\\s*\\d+[\\.,]?\\d*|\\d+[\\.,]?\\d*)`, "i");
+          const match = texto.match(regex);
+          if (match) {
+            let valor = match[1].replace(",", ".").trim();
+            if (/Inferior a/i.test(valor)) {
+              valor = "<" + valor.match(/\d+[.,]?\d*/)[0].replace(",", ".");
             }
-
-            // Extração de valores específicos
-            const hb = encontrarValor(/Hemoglobina\.+?:\s*([\d\.]+)/i, texto) || 
-                      encontrarValor(/Hemoglobina:?\s*([\d\.]+)/i, texto);
-            const ht = encontrarValor(/Hematócrito\.+?:\s*([\d\.]+)/i, texto) || 
-                      encontrarValor(/Hematócrito:?\s*([\d\.]+)/i, texto);
-            const leucocitos = encontrarValor(/Leucócitos\.+?:\s*([\d\.]+)/i, texto) || 
-                               encontrarValor(/Leucócitos:?\s*([\d\.]+)/i, texto);
-            const neutrofilos = encontrarValor(/Neutrófilos\.+?:\s*([\d\.]+)%/i, texto) || 
-                                encontrarValor(/Neutrófilos:?\s*([\d\.]+)%/i, texto);
-            const linfocitos = encontrarValor(/Linfócitos\.+?:\s*([\d\.]+)%/i, texto) || 
-                               encontrarValor(/Linfócitos:?\s*([\d\.]+)%/i, texto);
-            const plaquetas = encontrarValor(/Plaquetas\.+?:\s*([\d\.]+)/i, texto) || 
-                              encontrarValor(/Plaquetas:?\s*([\d\.]+)/i, texto);
-            const pcr = encontrarValor(/Proteína C Reativa[^:]*?:\s*([\d\.]+)/i, texto) || 
-                        encontrarValor(/PCR[^:]*?:\s*([\d\.]+)/i, texto);
-            const ureia = encontrarValor(/Uréia[^:]*?:\s*([\d\.]+)/i, texto) || 
-                          encontrarValor(/Ureia[^:]*?:\s*([\d\.]+)/i, texto);
-            const creatinina = encontrarValor(/Creatinina[^:]*?:\s*([\d\.]+)/i, texto);
-            const sodio = encontrarValor(/Sódio[^:]*?:\s*([\d\.]+)/i, texto);
-            const potassio = encontrarValor(/Potássio[^:]*?:\s*([\d\.]+)/i, texto);
-            const calcio = encontrarValor(/Cálcio Iônico[^:]*?:\s*([\d\.]+)/i, texto) || 
-                          encontrarValor(/CÁLCIO IÔNICO[^:]*?:\s*([\d\.]+)/i, texto);
-            const magnesio = encontrarValor(/Magnésio[^:]*?:\s*([\d\.]+)/i, texto);
-            const bilirrubina_total = encontrarValor(/Bilirrubina Total[^:]*?:\s*([\d\.]+)/i, texto);
-            const bilirrubina_direta = encontrarValor(/Bilirrubina Direta[^:]*?:\s*([\d\.]+)/i, texto);
-            const bilirrubina_indireta = encontrarValor(/Bilirrubina Indireta[^:]*?:\s*([\d\.]+)/i, texto);
-            const tgo = encontrarValor(/TGO[^:]*?:\s*([\d\.]+)/i, texto) || 
-                        encontrarValor(/Aspartato Aminotransferase[^:]*?:\s*([\d\.]+)/i, texto);
-            const tgp = encontrarValor(/TGP[^:]*?:\s*([\d\.]+)/i, texto) || 
-                        encontrarValor(/Alanina Aminotransferase[^:]*?:\s*([\d\.]+)/i, texto);
-            
-            // Gasometria
-            const ph = encontrarValor(/pH\s*:\s*([\d\.]+)/i, texto);
-            const bicarbonato = encontrarValor(/HCO3\s*:\s*([\d\.]+)/i, texto);
-            const lactato = encontrarValor(/ÁCIDO LÁTICO\s*:\s*([\d\.]+)/i, texto) || 
-                            encontrarValor(/Lactato\s*:\s*([\d\.]+)/i, texto);
-
-            // Formatação do resultado final
-            let resultado = `Hb ${hb} - Ht ${ht}% - I L ${leucocitos} - N ${neutrofilos}% - Ly ${linfocitos}% - Plq ${plaquetas} mil - I PCR ${pcr} - I HbGli - I U ${ureia} - Cr ${creatinina} - Na ${sodio} - K ${potassio} - Cat ${calcio} - Mg ${magnesio} - I Prot - Alb - I AcF - B12 - VitD - Fe - Ferr - IST - Tf - I Bt ${bilirrubina_total} - (Bi ${bilirrubina_indireta} - Bd ${bilirrubina_direta}) I FA - TGO ${tgo} - TGP ${tgp} - GGT - Amilase - Lipase - I GasoV: pH ${ph} - BIC ${bicarbonato} - Lac ${lactato}`;
-            
-            // Exibir resultado
-            document.getElementById('resultado').textContent = resultado;
+            if (sigla === "Plq") {
+              valor = (parseFloat(valor) * 1000).toString();
+            }
+            resultados.push({ sigla, valor });
+            encontrado = true;
+            break;
+          }
         }
-    </script>
+      }
+
+      // GasoV especial
+      const gasoChaves = ["Gaso_pH", "Gaso_BIC", "Gaso_Lac"];
+      const gasoFormat = { Gaso_pH: "pH", Gaso_BIC: "BIC", Gaso_Lac: "Lac" };
+      const gasoPartes = gasoChaves.map(k => {
+        const item = resultados.find(r => r.sigla === k);
+        return item ? `${gasoFormat[k]} ${item.valor}` : null;
+      }).filter(Boolean);
+      
+      const linha = resultados
+        .filter(r => !gasoChaves.includes(r.sigla))
+        .map(r => r.sigla === "Bt" ? null : r.sigla === "Bi" || r.sigla === "Bd" ? null : `${r.sigla} ${r.valor}`)
+        .filter(Boolean);
+
+      // Bilirrubinas agrupadas
+      const bi = resultados.find(r => r.sigla === "Bi");
+      const bd = resultados.find(r => r.sigla === "Bd");
+      const bt = resultados.find(r => r.sigla === "Bt");
+      if (bt && bi && bd) {
+        linha.push(`Bt ${bt.valor} I (Bi ${bi.valor} - Bd ${bd.valor})`);
+      }
+
+      // GasoV agrupado
+      if (gasoPartes.length > 0) {
+        linha.push(`GasoV: ${gasoPartes.join(" - ")}`);
+      }
+
+      document.getElementById("output").textContent = linha.join(" I ") || "Nenhum parâmetro encontrado.";
+    }
+  </script>
 </body>
 </html>
