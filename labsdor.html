@@ -1,92 +1,99 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Extrator de Exames</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    textarea { width: 100%; height: 300px; margin-bottom: 20px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    #output { white-space: pre-wrap; margin-top: 20px; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator de Resultados de Exames</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #resultado {
+            font-weight: bold;
+            font-size: 1.1em;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <h2>Extrator de Resultados de Exames</h2>
-  <textarea id="input" placeholder="Cole aqui o conteúdo do exame..."></textarea>
-  <button onclick="extrair()">Extrair</button>
-  <div id="output"></div>
+    <h1>Extrator de Resultados de Exames</h1>
+    <p>Cole o texto do laudo completo abaixo:</p>
+    <textarea id="laudoInput" placeholder="Cole o texto do laudo aqui..."></textarea>
+    <button onclick="extrairDados()">Extrair Dados</button>
+    <div id="resultado"></div>
 
-  <script>
-    function extrair() {
-      const texto = document.getElementById("input").value;
+    <script>
+        function extrairDados() {
+            const texto = document.getElementById('laudoInput').value;
+            
+            // Função para encontrar valores no texto
+            function encontrarValor(padrao, textoCompleto) {
+                const regex = new RegExp(padrao, 'i');
+                const match = textoCompleto.match(regex);
+                return match ? match[1].trim() : "";
+            }
 
-      const regexes = {
-        Hb: /Hemoglobina[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Ht: /Hemat[oó]crito[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        L: /Leuc[oó]citos[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        N: /Neut[róo]filos[\s\S]*?(\d+[\.,]?\d*)\s*\/mm³/,
-        Ly: /Linf[oó]citos[\s\S]*?(\d+[\.,]?\d*)\s*\/mm³/,
-        Plq: /Plaquetas[\s\S]*?[:\s](\d+)[^\d]/,
-        PCR: /Prote[ií]na C Reativa[\s\S]*?[:\s](Inferior a [\d,]+|\d+[\.,]?\d*)/,
-        HbGli: /Glicose[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        U: /Ureia[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Cr: /Creatinina[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Na: /S[oó]dio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        K: /Pot[áa]ssio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Cat: /C[áa]lcio I[oô]nico[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Mg: /Magn[ée]sio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Bt: /Bilirrubina Total[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Bi: /Bilirrubina Indireta[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Bd: /Bilirrubina Direta[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        TGo: /(AST|TGO)[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        TGP: /(ALT|TGP)[\s\S]*?[:\s](\d+[\.,]?\d*)/,
-        Gaso_pH: /pH\s*[:\s](\d+[\.,]?\d*)/,
-        Gaso_BIC: /HCO[₃3]\s*[:\s](\d+[\.,]?\d*)/,
-        Gaso_Lac: /[ÁA]cido L[áa]tico\s*[:\s](\d+[\.,]?\d*)/
-      };
+            // Extração de valores específicos
+            const hb = encontrarValor(/Hemoglobina\.+?:\s*([\d\.]+)/i, texto) || 
+                      encontrarValor(/Hemoglobina:?\s*([\d\.]+)/i, texto);
+            const ht = encontrarValor(/Hematócrito\.+?:\s*([\d\.]+)/i, texto) || 
+                      encontrarValor(/Hematócrito:?\s*([\d\.]+)/i, texto);
+            const leucocitos = encontrarValor(/Leucócitos\.+?:\s*([\d\.]+)/i, texto) || 
+                               encontrarValor(/Leucócitos:?\s*([\d\.]+)/i, texto);
+            const neutrofilos = encontrarValor(/Neutrófilos\.+?:\s*([\d\.]+)%/i, texto) || 
+                                encontrarValor(/Neutrófilos:?\s*([\d\.]+)%/i, texto);
+            const linfocitos = encontrarValor(/Linfócitos\.+?:\s*([\d\.]+)%/i, texto) || 
+                               encontrarValor(/Linfócitos:?\s*([\d\.]+)%/i, texto);
+            const plaquetas = encontrarValor(/Plaquetas\.+?:\s*([\d\.]+)/i, texto) || 
+                              encontrarValor(/Plaquetas:?\s*([\d\.]+)/i, texto);
+            const pcr = encontrarValor(/Proteína C Reativa[^:]*?:\s*([\d\.]+)/i, texto) || 
+                        encontrarValor(/PCR[^:]*?:\s*([\d\.]+)/i, texto);
+            const ureia = encontrarValor(/Uréia[^:]*?:\s*([\d\.]+)/i, texto) || 
+                          encontrarValor(/Ureia[^:]*?:\s*([\d\.]+)/i, texto);
+            const creatinina = encontrarValor(/Creatinina[^:]*?:\s*([\d\.]+)/i, texto);
+            const sodio = encontrarValor(/Sódio[^:]*?:\s*([\d\.]+)/i, texto);
+            const potassio = encontrarValor(/Potássio[^:]*?:\s*([\d\.]+)/i, texto);
+            const calcio = encontrarValor(/Cálcio Iônico[^:]*?:\s*([\d\.]+)/i, texto) || 
+                          encontrarValor(/CÁLCIO IÔNICO[^:]*?:\s*([\d\.]+)/i, texto);
+            const magnesio = encontrarValor(/Magnésio[^:]*?:\s*([\d\.]+)/i, texto);
+            const bilirrubina_total = encontrarValor(/Bilirrubina Total[^:]*?:\s*([\d\.]+)/i, texto);
+            const bilirrubina_direta = encontrarValor(/Bilirrubina Direta[^:]*?:\s*([\d\.]+)/i, texto);
+            const bilirrubina_indireta = encontrarValor(/Bilirrubina Indireta[^:]*?:\s*([\d\.]+)/i, texto);
+            const tgo = encontrarValor(/TGO[^:]*?:\s*([\d\.]+)/i, texto) || 
+                        encontrarValor(/Aspartato Aminotransferase[^:]*?:\s*([\d\.]+)/i, texto);
+            const tgp = encontrarValor(/TGP[^:]*?:\s*([\d\.]+)/i, texto) || 
+                        encontrarValor(/Alanina Aminotransferase[^:]*?:\s*([\d\.]+)/i, texto);
+            
+            // Gasometria
+            const ph = encontrarValor(/pH\s*:\s*([\d\.]+)/i, texto);
+            const bicarbonato = encontrarValor(/HCO3\s*:\s*([\d\.]+)/i, texto);
+            const lactato = encontrarValor(/ÁCIDO LÁTICO\s*:\s*([\d\.]+)/i, texto) || 
+                            encontrarValor(/Lactato\s*:\s*([\d\.]+)/i, texto);
 
-      const resultados = [];
-
-      for (const [chave, padrao] of Object.entries(regexes)) {
-        const match = texto.match(padrao);
-        if (match) {
-          let valor = match[1] || match[2]; // para TGO/TGP que têm dois grupos
-          valor = valor.replace(",", ".");
-          if (chave === "PCR" && valor.toLowerCase().includes("inferior")) {
-            valor = "<" + valor.match(/[\d,\.]+/)[0].replace(",", ".");
-          }
-          if (chave === "Plq") {
-            valor = (parseInt(valor) * 1000).toString();
-          }
-          resultados.push({ chave, valor });
+            // Formatação do resultado final
+            let resultado = `Hb ${hb} - Ht ${ht}% - I L ${leucocitos} - N ${neutrofilos}% - Ly ${linfocitos}% - Plq ${plaquetas} mil - I PCR ${pcr} - I HbGli - I U ${ureia} - Cr ${creatinina} - Na ${sodio} - K ${potassio} - Cat ${calcio} - Mg ${magnesio} - I Prot - Alb - I AcF - B12 - VitD - Fe - Ferr - IST - Tf - I Bt ${bilirrubina_total} - (Bi ${bilirrubina_indireta} - Bd ${bilirrubina_direta}) I FA - TGO ${tgo} - TGP ${tgp} - GGT - Amilase - Lipase - I GasoV: pH ${ph} - BIC ${bicarbonato} - Lac ${lactato}`;
+            
+            // Exibir resultado
+            document.getElementById('resultado').textContent = resultado;
         }
-      }
-
-      // Ordenar e formatar
-      const ordem = ["Hb", "Ht", "L", "N", "Ly", "Plq", "PCR", "HbGli", "U", "Cr", "Na", "K", "Cat", "Mg", "Bt", "Bi", "Bd", "TGo", "TGP"];
-      const gasoKeys = ["Gaso_pH", "Gaso_BIC", "Gaso_Lac"];
-      const principal = ordem
-        .map(k => {
-          const item = resultados.find(r => r.chave === k);
-          return item ? `${item.chave} ${item.valor}` : null;
-        })
-        .filter(Boolean)
-        .join(" I ");
-
-      const gasoPartes = gasoKeys
-        .map(k => {
-          const item = resultados.find(r => r.chave === k);
-          if (!item) return null;
-          const label = k === "Gaso_pH" ? "pH" : k === "Gaso_BIC" ? "BIC" : "Lac";
-          return `${label} ${item.valor}`;
-        })
-        .filter(Boolean)
-        .join(" - ");
-
-      const final = principal + (gasoPartes ? ` I GasoV: ${gasoPartes}` : "");
-
-      document.getElementById("output").textContent = final || "Nenhum dado encontrado.";
-    }
-  </script>
+    </script>
 </body>
 </html>
