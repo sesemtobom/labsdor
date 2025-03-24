@@ -2,97 +2,96 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Extrator Generalista de Exames</title>
+  <title>Extrator de Exames</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
     textarea { width: 100%; height: 300px; margin-bottom: 20px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-right: 10px; }
     #output { white-space: pre-wrap; margin-top: 20px; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-  <h2>Extrator de Exames Laboratoriais (Generalista)</h2>
+  <h2>Extrator de Exames Laboratoriais (Robusto)</h2>
   <textarea id="input" placeholder="Cole aqui o conteúdo bruto do laudo..."></textarea>
-  <button onclick="extrair()">Extrair</button>
+  <div>
+    <button onclick="extrair()">Extrair</button>
+    <button onclick="copiar()">Copiar</button>
+  </div>
   <div id="output"></div>
 
   <script>
+    function normalizarTexto(texto) {
+      return texto
+        .replace(/[^\S\r\n]{2,}/g, "") // remove múltiplos espaços entre letras
+        .replace(/[^\S\r\n]+/g, " ");  // normaliza espaço
+    }
+
+    function extrairValor(proximidade) {
+      const valorRegex = /(\d{1,3}(?:[.,]\d{1,3})?)/;
+      const match = proximidade.match(valorRegex);
+      return match ? match[1].replace(",", ".") : null;
+    }
+
     function extrair() {
-      const texto = document.getElementById("input").value;
-      const parametros = [
+      let texto = document.getElementById("input").value;
+      texto = normalizarTexto(texto);
+
+      const exames = [
         { sigla: "Hb", termos: ["Hemoglobina"] },
         { sigla: "Ht", termos: ["Hematócrito", "Hematocrito"] },
         { sigla: "L", termos: ["Leucócitos"] },
-        { sigla: "N", termos: ["Neutrófilos"] },
+        { sigla: "N", termos: ["Neutrófilos", "Segmentados"] },
         { sigla: "Ly", termos: ["Linfócitos"] },
+        { sigla: "Mo", termos: ["Monócitos"] },
+        { sigla: "Eo", termos: ["Eosinófilos"] },
+        { sigla: "Ba", termos: ["Basófilos"] },
         { sigla: "Plq", termos: ["Plaquetas"] },
-        { sigla: "PCR", termos: ["Proteína C Reativa"] },
+        { sigla: "RDW", termos: ["RDW"] },
+        { sigla: "PCR", termos: ["Proteína C Reativa", "PCR"] },
         { sigla: "HbGli", termos: ["Hemoglobina Glicada", "HbA1c"] },
-        { sigla: "U", termos: ["Ureia"] },
+        { sigla: "U", termos: ["Ureia", "Uréia"] },
         { sigla: "Cr", termos: ["Creatinina"] },
         { sigla: "Na", termos: ["Sódio", "Sodio"] },
         { sigla: "K", termos: ["Potássio", "Potassio"] },
-        { sigla: "Cat", termos: ["Cálcio Iônico"] },
+        { sigla: "Cat", termos: ["Cálcio Iônico", "Calcio Ionico"] },
         { sigla: "Mg", termos: ["Magnésio"] },
         { sigla: "Bt", termos: ["Bilirrubina Total"] },
         { sigla: "Bi", termos: ["Bilirrubina Indireta"] },
         { sigla: "Bd", termos: ["Bilirrubina Direta"] },
-        { sigla: "TGo", termos: ["AST", "TGO"] },
-        { sigla: "TGP", termos: ["ALT", "TGP"] },
-        { sigla: "Gaso_pH", termos: ["pH"] },
-        { sigla: "Gaso_BIC", termos: ["HCO3", "Bicarbonato"] },
-        { sigla: "Gaso_Lac", termos: ["Ácido Lático", "Lactato"] }
+        { sigla: "TGo", termos: ["TGO", "AST"] },
+        { sigla: "TGP", termos: ["TGP", "ALT"] },
+        { sigla: "pH", termos: ["pH"] },
+        { sigla: "HCO3", termos: ["HCO3", "Bicarbonato"] },
+        { sigla: "Lac", termos: ["Lactato", "Ácido Lático"] }
       ];
 
       const resultados = [];
 
-      for (const { sigla, termos } of parametros) {
-        let encontrado = false;
-        for (const termo of termos) {
-          const regex = new RegExp(`${termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,40}?[:\\s]?(Inferior a\\s*\\d+[\\.,]?\\d*|\\d+[\\.,]?\\d*)`, "i");
+      for (const exame of exames) {
+        for (const termo of exame.termos) {
+          const regex = new RegExp(termo + "[^\\n\\r]{0,50}", "i");
           const match = texto.match(regex);
           if (match) {
-            let valor = match[1].replace(",", ".").trim();
-            if (/Inferior a/i.test(valor)) {
-              valor = "<" + valor.match(/\d+[.,]?\d*/)[0].replace(",", ".");
+            const trecho = match[0];
+            const valor = extrairValor(trecho);
+            if (valor) {
+              resultados.push(`${exame.sigla} ${valor}`);
+              break;
             }
-            if (sigla === "Plq") {
-              valor = (parseFloat(valor) * 1000).toString();
-            }
-            resultados.push({ sigla, valor });
-            encontrado = true;
-            break;
           }
         }
       }
 
-      // GasoV especial
-      const gasoChaves = ["Gaso_pH", "Gaso_BIC", "Gaso_Lac"];
-      const gasoFormat = { Gaso_pH: "pH", Gaso_BIC: "BIC", Gaso_Lac: "Lac" };
-      const gasoPartes = gasoChaves.map(k => {
-        const item = resultados.find(r => r.sigla === k);
-        return item ? `${gasoFormat[k]} ${item.valor}` : null;
-      }).filter(Boolean);
-      
-      const linha = resultados
-        .filter(r => !gasoChaves.includes(r.sigla))
-        .map(r => r.sigla === "Bt" ? null : r.sigla === "Bi" || r.sigla === "Bd" ? null : `${r.sigla} ${r.valor}`)
-        .filter(Boolean);
+      const saida = resultados.join(" I ") || "Nenhum parâmetro encontrado.";
+      document.getElementById("output").textContent = saida;
+    }
 
-      // Bilirrubinas agrupadas
-      const bi = resultados.find(r => r.sigla === "Bi");
-      const bd = resultados.find(r => r.sigla === "Bd");
-      const bt = resultados.find(r => r.sigla === "Bt");
-      if (bt && bi && bd) {
-        linha.push(`Bt ${bt.valor} I (Bi ${bi.valor} - Bd ${bd.valor})`);
-      }
-
-      // GasoV agrupado
-      if (gasoPartes.length > 0) {
-        linha.push(`GasoV: ${gasoPartes.join(" - ")}`);
-      }
-
-      document.getElementById("output").textContent = linha.join(" I ") || "Nenhum parâmetro encontrado.";
+    function copiar() {
+      const texto = document.getElementById("output").textContent;
+      if (!texto.trim()) return alert("Nada para copiar.");
+      navigator.clipboard.writeText(texto).then(() => {
+        alert("Resultado copiado para a área de transferência!");
+      });
     }
   </script>
 </body>
