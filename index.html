@@ -1,144 +1,92 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrator de Exames Laboratoriais</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        textarea {
-            width: 100%;
-            height: 200px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-        #output {
-            margin-top: 20px;
-            font-size: 18px;
-            white-space: pre-wrap;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Extrator de Exames</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    textarea { width: 100%; height: 300px; margin-bottom: 20px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #output { white-space: pre-wrap; margin-top: 20px; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; }
+  </style>
 </head>
 <body>
-    <h1>Extrator de Exames Laboratoriais</h1>
-    <p>Cole o texto dos resultados dos exames abaixo e clique em "Processar" para formatar os dados.</p>
-    <textarea id="inputText" placeholder="Cole o texto aqui..."></textarea>
-    <button onclick="processarExames()">Processar</button>
-    <div id="output"></div>
+  <h2>Extrator de Resultados de Exames</h2>
+  <textarea id="input" placeholder="Cole aqui o conteúdo do exame..."></textarea>
+  <button onclick="extrair()">Extrair</button>
+  <div id="output"></div>
 
-    <script>
-        function processarExames() {
-            const inputText = document.getElementById('inputText').value;
-            const outputDiv = document.getElementById('output');
-            
-            // Dicionário de mapeamento: nome do exame -> sigla
-            const mapping = {
-                'Hemoglobina': 'Hb',
-                'Hematócrito': 'Ht',
-                'Leucócitos': 'L',
-                'Neutrófilos': 'N',
-                'Linfócitos': 'Ly',
-                'Plaquetas': 'Plq',
-                'Proteína C Reativa': 'PCR',
-                'Hemoglobina Glicada': 'HbGli',
-                'Ureia': 'U',
-                'Creatinina': 'Cr',
-                'Sódio': 'Na',
-                'Potássio': 'K',
-                'Cálcio Total': 'Cat',
-                'Magnésio': 'Mg',
-                'Proteína Total': 'Prot',
-                'Albumina': 'Alb',
-                'Ácido Fólico': 'AcF',
-                'Vitamina B12': 'B12',
-                'Vitamina D': 'VitD',
-                'Ferro': 'Fe',
-                'Ferritina': 'Ferr',
-                'Índice de Saturação de Transferrina': 'IST',
-                'Transferrina': 'Tf',
-                'Bilirrubina Total': 'Bt',
-                'Bilirrubina Indireta': 'Bi',
-                'Bilirrubina Direta': 'Bd',
-                'Fosfatase Alcalina': 'FA',
-                'Aspartato Aminotransferase': 'TGo',
-                'Alanina Aminotransferase': 'TGP',
-                'Gama-Glutamil Transferase': 'GGT',
-                'Amilase': 'Amilase',
-                'Lipase': 'Lipase',
-                'pH': 'GasoV: pH',
-                'HCO3': 'GasoV: BIC',
-                'Ácido Láctico': 'GasoV: Lac'
-            };
+  <script>
+    function extrair() {
+      const texto = document.getElementById("input").value;
 
-            // Expressões regulares para extrair valores
-            const regexPatterns = {
-                'Hb': /Hemoglobina[^\d]*(\d+\.\d+)/,
-                'Ht': /Hematócrito[^\d]*(\d+\.\d+)/,
-                'L': /Leucócitos[^\d]*(\d+)/,
-                'N': /Neutrófilos[^\d]*\d+\.\d+\s*%?\s*(\d+\.\d+)/,
-                'Ly': /Linfócitos[^\d]*\d+\.\d+\s*%?\s*(\d+\.\d+)/,
-                'Plq': /Plaquetas[^\d]*(\d+)/,
-                'PCR': /Resultado[^\d]*(\d+\.\d+)/,
-                'HbGli': /Hemoglobina Glicada[^\d]*(\d+\.\d+)/,
-                'U': /Ureia[^\d]*(\d+\.\d+)/,
-                'Cr': /Creatinina[^\d]*(\d+\.\d+)/,
-                'Na': /Sódio[^\d]*(\d+)/,
-                'K': /Potássio[^\d]*(\d+\.\d+)/,
-                'Cat': /Cálcio Total[^\d]*(\d+\.\d+)/,
-                'Mg': /Magnésio[^\d]*(\d+\.\d+)/,
-                'Prot': /Proteína Total[^\d]*(\d+\.\d+)/,
-                'Alb': /Albumina[^\d]*(\d+\.\d+)/,
-                'AcF': /Ácido Fólico[^\d]*(\d+\.\d+)/,
-                'B12': /Vitamina B12[^\d]*(\d+\.\d+)/,
-                'VitD': /Vitamina D[^\d]*(\d+\.\d+)/,
-                'Fe': /Ferro[^\d]*(\d+\.\d+)/,
-                'Ferr': /Ferritina[^\d]*(\d+\.\d+)/,
-                'IST': /Índice de Saturação de Transferrina[^\d]*(\d+\.\d+)/,
-                'Tf': /Transferrina[^\d]*(\d+\.\d+)/,
-                'Bt': /Bilirrubina Total[^\d]*(\d+\.\d+)/,
-                'Bi': /Bilirrubina Indireta[^\d]*(\d+\.\d+)/,
-                'Bd': /Bilirrubina Direta[^\d]*(\d+\.\d+)/,
-                'FA': /Fosfatase Alcalina[^\d]*(\d+\.\d+)/,
-                'TGo': /Aspartato Aminotransferase[^\d]*(\d+\.\d+)/,
-                'TGP': /Alanina Aminotransferase[^\d]*(\d+\.\d+)/,
-                'GGT': /Gama-Glutamil Transferase[^\d]*(\d+\.\d+)/,
-                'Amilase': /Amilase[^\d]*(\d+\.\d+)/,
-                'Lipase': /Lipase[^\d]*(\d+\.\d+)/,
-                'GasoV: pH': /pH[^\d]*(\d+\.\d+)/,
-                'GasoV: BIC': /HCO3[^\d]*(\d+\.\d+)/,
-                'GasoV: Lac': /Ácido Láctico[^\d]*(\d+\.\d+)/
-            };
+      const regexes = {
+        Hb: /Hemoglobina[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Ht: /Hemat[oó]crito[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        L: /Leuc[oó]citos[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        N: /Neut[róo]filos[\s\S]*?(\d+[\.,]?\d*)\s*\/mm³/,
+        Ly: /Linf[oó]citos[\s\S]*?(\d+[\.,]?\d*)\s*\/mm³/,
+        Plq: /Plaquetas[\s\S]*?[:\s](\d+)[^\d]/,
+        PCR: /Prote[ií]na C Reativa[\s\S]*?[:\s](Inferior a [\d,]+|\d+[\.,]?\d*)/,
+        HbGli: /Glicose[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        U: /Ureia[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Cr: /Creatinina[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Na: /S[oó]dio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        K: /Pot[áa]ssio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Cat: /C[áa]lcio I[oô]nico[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Mg: /Magn[ée]sio[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Bt: /Bilirrubina Total[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Bi: /Bilirrubina Indireta[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Bd: /Bilirrubina Direta[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        TGo: /(AST|TGO)[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        TGP: /(ALT|TGP)[\s\S]*?[:\s](\d+[\.,]?\d*)/,
+        Gaso_pH: /pH\s*[:\s](\d+[\.,]?\d*)/,
+        Gaso_BIC: /HCO[₃3]\s*[:\s](\d+[\.,]?\d*)/,
+        Gaso_Lac: /[ÁA]cido L[áa]tico\s*[:\s](\d+[\.,]?\d*)/
+      };
 
-            // Extrair valores do texto inserido
-            const valores = {};
-            for (const [sigla, regex] of Object.entries(regexPatterns)) {
-                const match = inputText.match(regex);
-                if (match) {
-                    valores[sigla] = match[1];
-                }
-            }
+      const resultados = [];
 
-            // Formatar a saída
-            let output = "Hb - Ht - I L - N - Ly - Plq - I PCR - IHbGli -% I U - Cr - Na - K - Cat - Mg - I Prot - Alb - I AcF - B12 - VitD - Fe - Ferr - IST -% Tf - - I Bt - ( Bi - Bd -) I FA - TGo - TGP - GGT - Amilase - Lipase - I GasoV: pH - BIC - Lac -";
-            const siglas = output.match(/[A-Za-z]+/g);
-            siglas.forEach(sigla => {
-                if (valores[sigla]) {
-                    output = output.replace(sigla + " -", sigla + " " + valores[sigla] + " ");
-                } else {
-                    output = output.replace(sigla + " -", "");
-                }
-            });
-
-            // Limpar espaços extras e ajustar formatação
-            output = output.replace(/I /g, "I ").replace(/ - /g, " ").trim();
-            outputDiv.textContent = output;
+      for (const [chave, padrao] of Object.entries(regexes)) {
+        const match = texto.match(padrao);
+        if (match) {
+          let valor = match[1] || match[2]; // para TGO/TGP que têm dois grupos
+          valor = valor.replace(",", ".");
+          if (chave === "PCR" && valor.toLowerCase().includes("inferior")) {
+            valor = "<" + valor.match(/[\d,\.]+/)[0].replace(",", ".");
+          }
+          if (chave === "Plq") {
+            valor = (parseInt(valor) * 1000).toString();
+          }
+          resultados.push({ chave, valor });
         }
-    </script>
+      }
+
+      // Ordenar e formatar
+      const ordem = ["Hb", "Ht", "L", "N", "Ly", "Plq", "PCR", "HbGli", "U", "Cr", "Na", "K", "Cat", "Mg", "Bt", "Bi", "Bd", "TGo", "TGP"];
+      const gasoKeys = ["Gaso_pH", "Gaso_BIC", "Gaso_Lac"];
+      const principal = ordem
+        .map(k => {
+          const item = resultados.find(r => r.chave === k);
+          return item ? `${item.chave} ${item.valor}` : null;
+        })
+        .filter(Boolean)
+        .join(" I ");
+
+      const gasoPartes = gasoKeys
+        .map(k => {
+          const item = resultados.find(r => r.chave === k);
+          if (!item) return null;
+          const label = k === "Gaso_pH" ? "pH" : k === "Gaso_BIC" ? "BIC" : "Lac";
+          return `${label} ${item.valor}`;
+        })
+        .filter(Boolean)
+        .join(" - ");
+
+      const final = principal + (gasoPartes ? ` I GasoV: ${gasoPartes}` : "");
+
+      document.getElementById("output").textContent = final || "Nenhum dado encontrado.";
+    }
+  </script>
 </body>
 </html>
